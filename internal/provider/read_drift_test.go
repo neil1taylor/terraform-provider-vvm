@@ -58,7 +58,7 @@ func TestRead_AVMDeletedOutOfBandIsRemovedFromState(t *testing.T) {
 		BootSubnetID: strVal("sub-1"), ActualState: strVal("Running"),
 		DesiredState: strVal("Running"), UpdatedAt: strVal("2026-10-10T10:00:00Z"),
 		JobID: strVal(""), Encrypted: types.BoolValue(false),
-		CurrentHostID: types.StringNull(), GuestIPv4: strVal("192.168.50.11"),
+		CurrentHostID: types.StringNull(), GuestIPv4: strVal("10.242.0.11"),
 		SSHAuthorizedKey: types.ListNull(types.StringType),
 	})
 	resp := &resource.ReadResponse{State: prior}
@@ -78,7 +78,7 @@ func TestRead_AStoppedVMComesBackStopped(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id":"vm-1","desired_state":"Stopped","actual_state":"Stopped",` +
 			`"updated_at":"2026-10-10T11:00:00Z","current_host_id":"host-7",` +
-			`"desired_guest_ipv4":"192.168.50.11","encrypted":false}`))
+			`"desired_guest_ipv4":"10.242.0.11","encrypted":false}`))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -92,7 +92,7 @@ func TestRead_AStoppedVMComesBackStopped(t *testing.T) {
 		BootSubnetID: strVal("sub-1"), ActualState: strVal("Running"),
 		DesiredState: strVal("Running"), UpdatedAt: strVal("2026-10-10T10:00:00Z"),
 		JobID: strVal(""), Encrypted: types.BoolValue(false),
-		CurrentHostID: types.StringNull(), GuestIPv4: strVal("192.168.50.11"),
+		CurrentHostID: types.StringNull(), GuestIPv4: strVal("10.242.0.11"),
 		SSHAuthorizedKey: types.ListNull(types.StringType),
 	})
 	resp := &resource.ReadResponse{State: prior}
@@ -133,8 +133,8 @@ func TestRead_ANetworkDeletedOutOfBandIsRemovedFromState(t *testing.T) {
 	s := schemaOf(t, ctx, res)
 	model := networkModel{
 		ID: strVal("net-1"), ClusterID: strVal("cluster-1"), Name: strVal("guests"),
-		VlanID: types.Int64Value(101), VpcSubnetID: strVal("sub-1"), Cidr: strVal("192.168.50.0/24"),
-		IpamRangeStart: strVal("192.168.50.10"), IpamRangeEnd: strVal("192.168.50.200"),
+		VlanID: types.Int64Value(101), VpcSubnetID: strVal("sub-1"), Cidr: strVal("10.242.0.0/24"),
+		IpamRangeStart: strVal("10.242.0.10"), IpamRangeEnd: strVal("10.242.0.200"),
 		ActualState: strVal("Active"), DesiredState: strVal("Active"),
 		UpdatedAt: strVal("2026-10-10T10:00:00Z"), JobID: strVal(""),
 	}
@@ -163,8 +163,8 @@ func TestRead_ADatabaseFaultIsNotReadAsGone(t *testing.T) {
 	s := schemaOf(t, ctx, res)
 	prior := stateOf(t, ctx, s, networkModel{
 		ID: strVal("net-1"), ClusterID: strVal("cluster-1"), Name: strVal("guests"),
-		VlanID: types.Int64Value(101), VpcSubnetID: strVal("sub-1"), Cidr: strVal("192.168.50.0/24"),
-		IpamRangeStart: strVal("192.168.50.10"), IpamRangeEnd: strVal("192.168.50.200"),
+		VlanID: types.Int64Value(101), VpcSubnetID: strVal("sub-1"), Cidr: strVal("10.242.0.0/24"),
+		IpamRangeStart: strVal("10.242.0.10"), IpamRangeEnd: strVal("10.242.0.200"),
 		ActualState: strVal("Active"), DesiredState: strVal("Active"),
 		UpdatedAt: strVal("2026-10-10T10:00:00Z"), JobID: strVal(""),
 	})

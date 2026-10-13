@@ -55,10 +55,46 @@ type writeAck struct {
 // jobRow is what GET /v1/jobs/{id} answers. Read only when a wait is about to
 // fail, so the error can name the real job state instead of "timed out".
 type jobRow struct {
-	Kind         string  `json:"kind"`
-	State        string  `json:"state"`
-	ErrorMessage *string `json:"error_message"`
-	Attempts     int32   `json:"attempts"`
+	Kind         string          `json:"kind"`
+	State        string          `json:"state"`
+	Result       json.RawMessage `json:"result"`
+	ErrorMessage *string         `json:"error_message"`
+	Attempts     int32           `json:"attempts"`
+}
+
+// awaitJob polls a job until it succeeds or fails and returns the result it
+// recorded. For a write whose 202 names no row yet: the row is made by the job,
+// and the job's result is the only place its id appears.
+func awaitJob(ctx context.Context, c *vvmClient, jobID string, timeout time.Duration) (json.RawMessage, error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		raw, err := c.get(ctx, "/v1/jobs/"+jobID)
+		if err != nil {
+			return nil, err
+		}
+		var job jobRow
+		if jsonErr := json.Unmarshal(raw, &job); jsonErr != nil {
+			return nil, fmt.Errorf("parse job %s: %w", jobID, jsonErr)
+		}
+		switch job.State {
+		case "succeeded":
+			return job.Result, nil
+		case "failed":
+			msg := "no reason recorded"
+			if job.ErrorMessage != nil && *job.ErrorMessage != "" {
+				msg = *job.ErrorMessage
+			}
+			return nil, fmt.Errorf("job %s %s failed: %s", jobID, job.Kind, msg)
+		}
+		if !time.Now().Before(deadline) {
+			return nil, fmt.Errorf("job %s %s was still %s after %s", jobID, job.Kind, stateOrUnknown(job.State), timeout)
+		}
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("job %s %s was still %s when Terraform gave up: %w", jobID, job.Kind, stateOrUnknown(job.State), ctx.Err())
+		case <-time.After(asyncPollInterval):
+		}
+	}
 }
 
 // idempotencyKeyFor derives the Idempotency-Key for a write.
@@ -173,7 +209,7 @@ func (w stateWait) wait(ctx context.Context, timeout time.Duration) (asyncRow, [
 
 // waitGone polls until the row is no longer there. A delete is not done when
 // the API accepts it: the row goes when the job behind it finishes, and for a
-// VM that means a host has confirmed the domain is gone.
+// VM that means a host has confirmed the domain is gone (#639).
 func (w stateWait) waitGone(ctx context.Context, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	var last asyncRow
@@ -233,7 +269,7 @@ func (w stateWait) deleteAndWait(ctx context.Context, timeout time.Duration) err
 			// send the timestamp it has now.
 		case status == http.StatusConflict:
 			// The product is holding the delete — a VM whose migration has not
-			// settled is held for five minutes. Asking again is the only
+			// settled is held for five minutes (#728). Asking again is the only
 			// thing that clears it.
 		default:
 			return err

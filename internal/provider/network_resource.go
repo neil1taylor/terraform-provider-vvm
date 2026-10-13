@@ -88,7 +88,7 @@ func (r *networkResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 				"cidr": schema.StringAttribute{
 					Required:            true,
-					MarkdownDescription: "The guest subnet in CIDR form, e.g. `192.168.50.0/24`.",
+					MarkdownDescription: "The guest subnet in CIDR form, e.g. `10.242.0.0/24`.",
 					PlanModifiers:       forceNew(),
 				},
 				"ipam_range_start": schema.StringAttribute{

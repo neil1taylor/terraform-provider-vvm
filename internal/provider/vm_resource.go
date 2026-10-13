@@ -20,7 +20,7 @@ var _ resource.Resource = &vmResource{}
 
 // A VM create is scheduling, a disk from the golden image, a network reconcile
 // and a boot. The delete waits longer than it looks: the control plane holds a
-// delete for five minutes after a migration of that VM settles.
+// delete for five minutes after a migration of that VM settles (#728).
 const (
 	vmCreateTimeout = "45m"
 	vmDeleteTimeout = "30m"
@@ -345,7 +345,7 @@ func (r *vmResource) Delete(ctx context.Context, req resource.DeleteRequest, res
 		return
 	}
 	// A VM delete reaches the host that holds it, and the row goes only when
-	// that host confirms the domain is gone. Waiting is the whole point:
+	// that host confirms the domain is gone (#639). Waiting is the whole point:
 	// a destroy that returned on the 202 would hand the next apply a name and an
 	// address a running guest still has.
 	if err := r.waitFor(state.ID.ValueString(), optionalString(state.JobID)).

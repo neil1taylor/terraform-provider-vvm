@@ -286,7 +286,7 @@ func TestDeleteAndWait_RereadsAfterAStalePrecondition(t *testing.T) {
 }
 
 // TestDeleteAndWait_KeepsAskingWhileTheProductHoldsTheDelete — a VM is refused
-// 409 delete_blocked for five minutes after a migration settles. The
+// 409 delete_blocked for five minutes after a migration settles (#728). The
 // only thing that clears it is asking again.
 func TestDeleteAndWait_KeepsAskingWhileTheProductHoldsTheDelete(t *testing.T) {
 	fastPolls(t)

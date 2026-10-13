@@ -148,9 +148,9 @@ func TestBuildNetworkBody(t *testing.T) {
 		Name:           strVal("guests"),
 		VlanID:         types.Int64Value(101),
 		VpcSubnetID:    strVal("sub-1"),
-		Cidr:           strVal("192.168.50.0/24"),
-		IpamRangeStart: strVal("192.168.50.10"),
-		IpamRangeEnd:   strVal("192.168.50.200"),
+		Cidr:           strVal("10.242.0.0/24"),
+		IpamRangeStart: strVal("10.242.0.10"),
+		IpamRangeEnd:   strVal("10.242.0.200"),
 	}
 	body := buildNetworkBody(plan)
 	for key, want := range map[string]any{
@@ -158,9 +158,9 @@ func TestBuildNetworkBody(t *testing.T) {
 		"name":             "guests",
 		"vlan_id":          int64(101),
 		"vpc_subnet_id":    "sub-1",
-		"cidr":             "192.168.50.0/24",
-		"ipam_range_start": "192.168.50.10",
-		"ipam_range_end":   "192.168.50.200",
+		"cidr":             "10.242.0.0/24",
+		"ipam_range_start": "10.242.0.10",
+		"ipam_range_end":   "10.242.0.200",
 	} {
 		if body[key] != want {
 			t.Errorf("%s: got %v (%T), want %v", key, body[key], body[key], want)
@@ -417,14 +417,14 @@ func TestNetworkAndDatastoreWaitTargets(t *testing.T) {
 // is no DHCP lease and no DNS record. A read that does not carry one must not be
 // read as the guest having lost it.
 func TestVMRowToState_AnAbsentAddressDoesNotEraseTheOneWeWereGiven(t *testing.T) {
-	m := vmModel{GuestIPv4: strVal("192.168.50.11")}
+	m := vmModel{GuestIPv4: strVal("10.242.0.11")}
 	vmRowToState(vmRow{asyncRow: asyncRow{ID: "vm-1", ActualState: "Running"}}, &m)
-	if m.GuestIPv4.ValueString() != "192.168.50.11" {
+	if m.GuestIPv4.ValueString() != "10.242.0.11" {
 		t.Errorf("guest_ipv4 became %q after a read that carried none", m.GuestIPv4.ValueString())
 	}
 	// The control: a read that DOES carry one updates it, so the line above is
 	// not a field that is simply never written.
-	addr := "192.168.50.12"
+	addr := "10.242.0.12"
 	vmRowToState(vmRow{asyncRow: asyncRow{ID: "vm-1"}, DesiredGuestIPv4: &addr}, &m)
 	if m.GuestIPv4.ValueString() != addr {
 		t.Errorf("guest_ipv4 is %q after a read reporting %q", m.GuestIPv4.ValueString(), addr)
@@ -521,7 +521,7 @@ func TestTimeoutDefaultsAreDurations(t *testing.T) {
 		}
 	}
 	// The VM's delete has to outlast the five minutes the control plane holds a
-	// delete after a migration settles, or every destroy of a VM that has
+	// delete after a migration settles (#728), or every destroy of a VM that has
 	// ever been moved fails.
 	d, err := parseTimeout("", vmDeleteTimeout)
 	if err != nil || d.Minutes() < 6 {
