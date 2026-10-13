@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -230,6 +231,16 @@ func (r *datastoreResource) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("Error parsing the datastore create response", jsonErr.Error())
 		return
 	}
+	if ack.ID == "" {
+		// Provisioning: the datastore row does not exist until the job has made
+		// the share, so the 202 names a job and no id (postDatastoreProvision).
+		id, idErr := r.idFromProvisionJob(ctx, ack.JobID, timeout)
+		if idErr != nil {
+			resp.Diagnostics.AddError("Error provisioning datastore", idErr.Error())
+			return
+		}
+		ack.ID = id
+	}
 	plan.ID = types.StringValue(ack.ID)
 	plan.JobID = types.StringValue(ack.JobID)
 	plan.CapacityGb = types.Int64Value(0)
@@ -244,6 +255,25 @@ func (r *datastoreResource) Create(ctx context.Context, req resource.CreateReque
 	if waitErr != nil {
 		resp.Diagnostics.AddError("Datastore did not reach Active", waitErr.Error())
 	}
+}
+
+// idFromProvisionJob waits for the datastore.provision job and reads the new
+// datastore's id out of its result.
+func (r *datastoreResource) idFromProvisionJob(ctx context.Context, jobID string, timeout time.Duration) (string, error) {
+	if jobID == "" {
+		return "", errors.New("the control plane accepted the datastore but named neither a datastore nor a job")
+	}
+	result, err := awaitJob(ctx, r.client, jobID, timeout)
+	if err != nil {
+		return "", err
+	}
+	var res struct {
+		DatastoreID string `json:"datastore_id"`
+	}
+	if jsonErr := json.Unmarshal(result, &res); jsonErr != nil || res.DatastoreID == "" {
+		return "", fmt.Errorf("job %s succeeded but its result names no datastore_id: %s", jobID, string(result))
+	}
+	return res.DatastoreID, nil
 }
 
 func (r *datastoreResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {

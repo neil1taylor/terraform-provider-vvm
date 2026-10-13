@@ -24,7 +24,7 @@ const brsEnrollmentPollInterval = 10 * time.Second
 // the VM (POST /v1/vms/{id}/brs-unenroll, then polls until not enrolled). Read
 // calls GET /v1/vms/{id}/brs-state. Update is never called (vm_id is ForceNew).
 //
-// VVM never proxies BRS's API to clients. The CP mediates all BRS
+// ADR-0024: VVM never proxies BRS's API to clients. The CP mediates all BRS
 // operations. This resource talks to the VVM REST API, not BRS directly.
 //
 // HCL example:
@@ -79,7 +79,7 @@ func (r *brsEnrollmentResource) Schema(_ context.Context, _ resource.SchemaReque
 		MarkdownDescription: "Enrolls (or unenrols) a VVM VM in IBM Cloud Backup & Recovery (BRS). " +
 			"Create blocks until the VM reaches `enrolled` BRS state (or until a terminal error). " +
 			"Delete unenrols the VM and blocks until the BRS state is no longer `enrolled`. " +
-			"All operations are mediated through the VVM REST API; " +
+			"All operations are mediated through the VVM REST API per ADR-0024; " +
 			"the TF resource never calls BRS directly.\n\n" +
 			"The VM must be in `Running` state before enrollment (guest agent must be reachable).",
 		Attributes: map[string]schema.Attribute{

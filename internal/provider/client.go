@@ -2,7 +2,7 @@
 //
 // The provider talks to the VVM REST API over HTTPS using a bearer token
 // (VVM_API_TOKEN or IBMCLOUD_API_KEY → IAM exchange). It exposes two
-// resource types for the image backup backup subsystem:
+// resource types for the WS-2.3 backup subsystem:
 //
 //   - vvm_backup_policy   → POST/GET/PUT/DELETE /v1/backup-policies
 //   - vvm_protection_group → POST/GET/PUT/DELETE /v1/protection-groups
@@ -43,7 +43,7 @@ func newVVMClient(baseURL, token string) *vvmClient {
 }
 
 // apiError is returned when the VVM API responds with a non-2xx status.
-// It carries the HTTP status and the raw body (may be a lifecycle API envelope).
+// It carries the HTTP status and the raw body (may be a WS-1.6 envelope).
 type apiError struct {
 	Status  int
 	Message string
