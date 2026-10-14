@@ -29,6 +29,11 @@ variable "size_gib" {
 variable "golden_image" { type = string }
 variable "boot_subnet_id" { type = string }
 variable "ssh_public_key" { type = string }
+variable "create_vm" {
+  type        = bool
+  default     = true
+  description = "False makes the network, the datastore and the policy only. A new datastore is empty, so the golden image goes onto it before the VM is asked for."
+}
 variable "cos_bucket" { type = string }
 variable "cos_region" { type = string }
 
@@ -56,6 +61,7 @@ resource "vvm_datastore" "this" {
 }
 
 resource "vvm_vm" "this" {
+  count               = var.create_vm ? 1 : 0
   cluster_id          = var.cluster_id
   datastore_id        = vvm_datastore.this.id
   network_id          = vvm_network.this.id
